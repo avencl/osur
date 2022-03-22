@@ -43,3 +43,14 @@ void warn(char *format, ...)
 
 	u_stderr->print(text);
 }
+
+int puts(char *format)
+{
+    char text[CONSOLE_MAXLEN];
+
+    vssprintf(text, CONSOLE_MAXLEN, &format);
+    strcat(text, "\n");
+
+
+    return u_stdout->print(text);
+}

@@ -8,7 +8,7 @@
 .extern	print_hello
 
 /* this code must be first in image for boot loader to find it easy */
-.text
+.section .text
 
 /* entry point (required for boot loader) */
 .global arch_start
@@ -42,7 +42,7 @@ loop:   hlt
 	jmp	loop
 
 
- .bss
+.section .bss
 .align  4
 
 	.lcomm _stack_, 4096

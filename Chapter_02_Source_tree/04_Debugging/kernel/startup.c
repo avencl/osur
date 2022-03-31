@@ -37,6 +37,7 @@ void k_startup()
 
 	/* start desired program(s) */
 	hello_world();
+    novi_program();
 	debug();
 
 	kprintf("\nSystem halted!\n");

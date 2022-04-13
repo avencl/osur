@@ -1,7 +1,8 @@
-/*!  Dynamic memory allocator - first fit */
+ /*!  Dynamic memory allocator - first fit */
 
 #define _FF_SIMPLE_C_
 #include <lib/ff_simple.h>
+#include <stdio.h>
 
 #ifndef ASSERT
 #include ASSERT_H
@@ -60,9 +61,11 @@ void *ffs_init(void *mem_segm, size_t size)
  */
 void *ffs_alloc(ffs_mpool_t *mpool, size_t size)
 {
-	ffs_hdr_t *iter, *chunk;
+	ffs_hdr_t *iter, *iter2, *chunk, *after, *temp;
 
 	ASSERT(mpool);
+
+	// printf("ukupan broj memorije je  = %d\n", mpool->first->size);
 
 	size += sizeof(size_t) * 2; /* add header and tail size */
 	if (size < HEADER_SIZE)
@@ -72,11 +75,43 @@ void *ffs_alloc(ffs_mpool_t *mpool, size_t size)
 	ALIGN_FW(size);
 
 	iter = mpool->first;
+	iter2 = mpool->first;
+	chunk = mpool->first;
 	while (iter != NULL && iter->size < size)
 		iter = iter->next;
 
-	if (iter == NULL)
-		return NULL; /* no adequate free chunk found */
+	size_t velicina = 0;
+	int i = 0;
+	if (iter == NULL){
+		while(iter2 != NULL && velicina < size) {
+			velicina += iter2->size;
+			iter2 = iter2->next;
+			i++;
+		}
+		if(iter2 == NULL) {
+			printf("stvarno nema memorije\n");
+			return NULL;
+		}
+		temp = chunk;
+		for (int j = 0; j < i; ++j)
+		{
+			after = GET_AFTER(temp);
+			if (CHECK_FREE(after))
+			{
+				ffs_remove_chunk(mpool, after);
+				chunk->size += after->size; /* join */
+				printf("spojeni chunk size = %d\n", chunk->size);
+				temp = temp->next;
+	
+					
+			}
+		}
+		printf("alociram memoriju nakon spajanja\n");
+		MARK_USED(chunk);
+		CLONE_SIZE_TO_TAIL(chunk);
+		return ((void *) chunk) + sizeof(size_t);
+		// return NULL; /* no adequate free chunk found */
+	}
 
 	if (iter->size >= size + HEADER_SIZE)
 	{
@@ -95,6 +130,7 @@ void *ffs_alloc(ffs_mpool_t *mpool, size_t size)
 		ffs_remove_chunk(mpool, chunk);
 	}
 
+
 	MARK_USED(chunk);
 	CLONE_SIZE_TO_TAIL(chunk);
 
@@ -109,7 +145,7 @@ void *ffs_alloc(ffs_mpool_t *mpool, size_t size)
  */
 int ffs_free(ffs_mpool_t *mpool, void *chunk_to_be_freed)
 {
-	ffs_hdr_t *chunk, *before, *after;
+	ffs_hdr_t *chunk; // *before, *after;
 
 	ASSERT(mpool && chunk_to_be_freed);
 
@@ -119,25 +155,45 @@ int ffs_free(ffs_mpool_t *mpool, void *chunk_to_be_freed)
 	MARK_FREE(chunk); /* mark it as free */
 
 	/* join with left? */
-	before = ((void *) chunk) - sizeof(size_t);
-	if (CHECK_FREE(before))
-	{
-		before = GET_HDR(before);
-		ffs_remove_chunk(mpool, before);
-		before->size += chunk->size; /* join */
-		chunk = before;
-	}
+	//before = ((void *) chunk) - sizeof(size_t);
+	//if (CHECK_FREE(before))
+	//{
+	//	before = GET_HDR(before);
+	//	ffs_remove_chunk(mpool, before);
+	//	before->size += chunk->size; /* join */
+	//	chunk = before;
+	//}
 
 	/* join with right? */
-	after = GET_AFTER(chunk);
-	if (CHECK_FREE(after))
-	{
-		ffs_remove_chunk(mpool, after);
-		chunk->size += after->size; /* join */
-	}
+	// after = GET_AFTER(chunk);
+	//if (CHECK_FREE(after))
+	//{
+	//	ffs_remove_chunk(mpool, after);
+	//	chunk->size += after->size; /* join */
+	//}
 
 	/* insert chunk in free list */
+	ffs_hdr_t *iter, *iter2;
+	int i = 0;
+	iter = mpool->first;
+	
+	while(iter != NULL){
+		iter = iter->next;
+		i++;
+	}
+	printf("broj slobodnih blokova prije oslobadanja je = %d\n", i);
+
 	ffs_insert_chunk(mpool, chunk);
+	
+
+	i = 0;
+	// iter2 = mpool->first;
+	iter2 = mpool->first;
+	while(iter2 != NULL){
+		iter2 = iter2->next;
+		i++;
+	}
+	printf("broj slobodnih blokova nakon oslobadanja je = %d\n", i);
 
 	/* set chunk tail */
 	CLONE_SIZE_TO_TAIL(chunk);

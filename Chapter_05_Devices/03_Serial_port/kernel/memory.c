@@ -52,6 +52,7 @@ int kfree(void *chunk)
 	return KFREE(chunk);
 }
 
+
 /*! Allocate space for kernel object and descriptor of that object */
 void *kmalloc_kobject(size_t obj_size)
 {

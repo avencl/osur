@@ -48,6 +48,7 @@ int open(char *pathname, int flags, mode_t mode)
 	}
 
 	retval = sys__open(pathname, flags, mode, &desc);
+    printf("%s", pathname);
 
 	if (retval)
 		return EXIT_FAILURE;

@@ -15,41 +15,41 @@
 */
 void *ffs_init(void *mem_segm, size_t size)
 {
-	size_t start, end;
-	ffs_hdr_t *chunk, *border;
-	ffs_mpool_t *mpool;
+    size_t start, end;
+    ffs_hdr_t *chunk, *border;
+    ffs_mpool_t *mpool;
 
-	ASSERT(mem_segm && size > sizeof(ffs_hdr_t) * 2);
+    ASSERT(mem_segm && size > sizeof(ffs_hdr_t) * 2);
 
-	/* align all on 'size_t' (if already not aligned) */
-	start = (size_t) mem_segm;
-	end = start + size;
-	ALIGN_FW(start);
-	mpool = (void *) start;		/* place mm descriptor here */
-	start += sizeof(ffs_mpool_t);
-	ALIGN(end);
+    /* align all on 'size_t' (if already not aligned) */
+    start = (size_t) mem_segm;
+    end = start + size;
+    ALIGN_FW(start);
+    mpool = (void *) start;		/* place mm descriptor here */
+    start += sizeof(ffs_mpool_t);
+    ALIGN(end);
 
-	mpool->first = NULL;
+    mpool->first = NULL;
 
-	if (end - start < 2 * HEADER_SIZE)
-		return NULL;
+    if (end - start < 2 * HEADER_SIZE)
+        return NULL;
 
-	border = (ffs_hdr_t *) start;
-	border->size = sizeof(size_t);
-	MARK_USED(border);
+    border = (ffs_hdr_t *) start;
+    border->size = sizeof(size_t);
+    MARK_USED(border);
 
-	chunk = GET_AFTER(border);
-	chunk->size = end - start - 2 * sizeof(size_t);
-	MARK_FREE(chunk);
-	CLONE_SIZE_TO_TAIL(chunk);
+    chunk = GET_AFTER(border);
+    chunk->size = end - start - 2 * sizeof(size_t);
+    MARK_FREE(chunk);
+    CLONE_SIZE_TO_TAIL(chunk);
 
-	border = GET_AFTER(chunk);
-	border->size = sizeof(size_t);
-	MARK_USED(border);
+    border = GET_AFTER(chunk);
+    border->size = sizeof(size_t);
+    MARK_USED(border);
 
-	ffs_insert_chunk(mpool, chunk); /* first and only free chunk */
+    ffs_insert_chunk(mpool, chunk); /* first and only free chunk */
 
-	return mpool;
+    return mpool;
 }
 
 /*!
@@ -60,45 +60,45 @@ void *ffs_init(void *mem_segm, size_t size)
  */
 void *ffs_alloc(ffs_mpool_t *mpool, size_t size)
 {
-	ffs_hdr_t *iter, *chunk;
+    ffs_hdr_t *iter, *chunk;
 
-	ASSERT(mpool);
+    ASSERT(mpool);
 
-	size += sizeof(size_t) * 2; /* add header and tail size */
-	if (size < HEADER_SIZE)
-		size = HEADER_SIZE;
+    size += sizeof(size_t) * 2; /* add header and tail size */
+    if (size < HEADER_SIZE)
+        size = HEADER_SIZE;
 
-	/* align request size to higher 'size_t' boundary */
-	ALIGN_FW(size);
+    /* align request size to higher 'size_t' boundary */
+    ALIGN_FW(size);
 
-	iter = mpool->first;
-	while (iter != NULL && iter->size < size)
-		iter = iter->next;
+    iter = mpool->first;
+    while (iter != NULL && iter->size < size)
+        iter = iter->next;
 
-	if (iter == NULL)
-		return NULL; /* no adequate free chunk found */
+    if (iter == NULL)
+        return NULL; /* no adequate free chunk found */
 
-	if (iter->size >= size + HEADER_SIZE)
-	{
-		/* split chunk */
-		/* first part remains in free list, just update size */
-		iter->size -= size;
-		CLONE_SIZE_TO_TAIL(iter);
+    if (iter->size >= size + HEADER_SIZE)
+    {
+        /* split chunk */
+        /* first part remains in free list, just update size */
+        iter->size -= size;
+        CLONE_SIZE_TO_TAIL(iter);
 
-		chunk = GET_AFTER(iter);
-		chunk->size = size;
-	}
-	else { /* give whole chunk */
-		chunk = iter;
+        chunk = GET_AFTER(iter);
+        chunk->size = size;
+    }
+    else { /* give whole chunk */
+        chunk = iter;
 
-		/* remove it from free list */
-		ffs_remove_chunk(mpool, chunk);
-	}
+        /* remove it from free list */
+        ffs_remove_chunk(mpool, chunk);
+    }
 
-	MARK_USED(chunk);
-	CLONE_SIZE_TO_TAIL(chunk);
+    MARK_USED(chunk);
+    CLONE_SIZE_TO_TAIL(chunk);
 
-	return ((void *) chunk) + sizeof(size_t);
+    return ((void *) chunk) + sizeof(size_t);
 }
 
 /*!
@@ -109,40 +109,73 @@ void *ffs_alloc(ffs_mpool_t *mpool, size_t size)
  */
 int ffs_free(ffs_mpool_t *mpool, void *chunk_to_be_freed)
 {
-	ffs_hdr_t *chunk, *before, *after;
+    ffs_hdr_t *chunk, *before, *after;
 
-	ASSERT(mpool && chunk_to_be_freed);
+    ASSERT(mpool && chunk_to_be_freed);
 
-	chunk = chunk_to_be_freed - sizeof(size_t);
-	ASSERT(CHECK_USED(chunk));
+    chunk = chunk_to_be_freed - sizeof(size_t);
+    ASSERT(CHECK_USED(chunk));
 
-	MARK_FREE(chunk); /* mark it as free */
+    MARK_FREE(chunk); /* mark it as free */
 
-	/* join with left? */
-	before = ((void *) chunk) - sizeof(size_t);
-	if (CHECK_FREE(before))
-	{
-		before = GET_HDR(before);
-		ffs_remove_chunk(mpool, before);
-		before->size += chunk->size; /* join */
-		chunk = before;
-	}
+    ffs_hdr_t *iter3;
+    int j = 0;
+    iter3 = mpool->first;
 
-	/* join with right? */
-	after = GET_AFTER(chunk);
-	if (CHECK_FREE(after))
-	{
-		ffs_remove_chunk(mpool, after);
-		chunk->size += after->size; /* join */
-	}
+    while(iter3 != NULL){
+        iter3 = iter3->next;
+        j++;
+    }
 
-	/* insert chunk in free list */
-	ffs_insert_chunk(mpool, chunk);
+    if(j >= 10) {
 
-	/* set chunk tail */
-	CLONE_SIZE_TO_TAIL(chunk);
+        /* join with left? */
+        before = ((void *) chunk) - sizeof(size_t);
+        if (CHECK_FREE(before))
+        {
+            before = GET_HDR(before);
+            ffs_remove_chunk(mpool, before);
+            before->size += chunk->size; /* join */
+            chunk = before;
+        }
 
-	return 0;
+        /* join with right? */
+        after = GET_AFTER(chunk);
+        if (CHECK_FREE(after))
+        {
+            ffs_remove_chunk(mpool, after);
+            chunk->size += after->size; /* join */
+        }
+
+    }
+
+    ffs_hdr_t *iter, *iter2;
+    int i = 0;
+    iter = mpool->first;
+
+    while(iter != NULL){
+        iter = iter->next;
+        i++;
+    }
+    printf("broj slobodnih blokova prije oslobadanja je = %d\n", i);
+
+    ffs_insert_chunk(mpool, chunk);
+
+
+    i = 0;
+    // iter2 = mpool->first;
+    iter2 = mpool->first;
+    while(iter2 != NULL){
+        iter2 = iter2->next;
+        i++;
+    }
+    printf("broj slobodnih blokova nakon oslobadanja je = %d\n", i);
+
+
+    /* set chunk tail */
+    CLONE_SIZE_TO_TAIL(chunk);
+
+    return 0;
 }
 
 /*!
@@ -152,13 +185,13 @@ int ffs_free(ffs_mpool_t *mpool, void *chunk_to_be_freed)
  */
 static void ffs_remove_chunk(ffs_mpool_t *mpool, ffs_hdr_t *chunk)
 {
-	if (chunk == mpool->first) /* first in list? */
-		mpool->first = chunk->next;
-	else
-		chunk->prev->next = chunk->next;
+    if (chunk == mpool->first) /* first in list? */
+        mpool->first = chunk->next;
+    else
+        chunk->prev->next = chunk->next;
 
-	if (chunk->next != NULL)
-		chunk->next->prev = chunk->prev;
+    if (chunk->next != NULL)
+        chunk->next->prev = chunk->prev;
 }
 
 /*!
@@ -168,11 +201,11 @@ static void ffs_remove_chunk(ffs_mpool_t *mpool, ffs_hdr_t *chunk)
  */
 static void ffs_insert_chunk(ffs_mpool_t *mpool, ffs_hdr_t *chunk)
 {
-	chunk->next = mpool->first;
-	chunk->prev = NULL;
+    chunk->next = mpool->first;
+    chunk->prev = NULL;
 
-	if (mpool->first)
-		mpool->first->prev = chunk;
+    if (mpool->first)
+        mpool->first->prev = chunk;
 
-	mpool->first = chunk;
+    mpool->first = chunk;
 }

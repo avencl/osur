@@ -5,52 +5,52 @@
 ENTRY(arch_startup)
 
 SECTIONS {
-	.code 0x0 :
-	{
-		kernel_code_addr = .;
+.code 0x0 :
+{
+kernel_code_addr = .;
 
-		/* instructions */
-		*?/boot/startup.asm.o ( .text* )
-		*?/boot/premjesti.o ( .text* )
-	}
-	.instrukcije 0x200000 : AT(0x10000)
-	{
-		*( .text* )
-	}
-	size_i = SIZEOF(.instrukcije);
+/* instructions */
+*?/boot/startup.asm.o ( .text* )
+*?/boot/premjesti.o ( .text* )
+}
+.instrukcije 0x130000 : AT(0x10000)
+{
+*( .text* )
+}
+size_i = SIZEOF(.instrukcije);
 
-	.data 0x400000: AT(0x50000)
-	{
-		kernel_data_addr = .;
+.data 0x120000: AT(0x50000)
+{
+kernel_data_addr = .;
 
-		/* read only data (constants), initialized global variables */
-		* ( .rodata* .data* )
-	}
-	size_data = SIZEOF(.data);
-	.bss 0x800000: AT(0x80000)
-	{
-		*( .bss* COMMON* )
+/* read only data (constants), initialized global variables */
+* ( .rodata* .data* )
+}
+size_data = SIZEOF(.data);
+.bss 0x800000: AT(0x80000)
+{
+*( .bss* COMMON* )
 
-		. = ALIGN (4096);
-	}
+. = ALIGN (4096);
+}
 
-	.stog_u_slici 0x900000: AT(0x90000)
-	{
-		*( .stog )
-		. = ALIGN (4096);
-	}
+.stog_u_slici 0x900000: AT(0x90000)
+{
+*( .stog )
+. = ALIGN (4096);
+}
 
-	/*
-	 * what with other sections generated with gcc (various versions)?
-	 * if optimizing for size discard them with: /DISCARD/ : { *(*) }
-	 * if debugging with qemu/gdb they must be included
-	 * - they can be included implicitly, without declaring them here
-	 * - but they will be put behind "kernel_end_addr" so its best to use
-	 *   multiboot loader (QEMU is that)
-	 */
+/*
+ * what with other sections generated with gcc (various versions)?
+ * if optimizing for size discard them with: /DISCARD/ : { *(*) }
+ * if debugging with qemu/gdb they must be included
+ * - they can be included implicitly, without declaring them here
+ * - but they will be put behind "kernel_end_addr" so its best to use
+ *   multiboot loader (QEMU is that)
+ */
 
 #ifndef DEBUG
-	/DISCARD/ : { *(*) }
+/DISCARD/ : { *(*) }
 #endif
-	kernel_end_addr = .;
+kernel_end_addr = .;
 }

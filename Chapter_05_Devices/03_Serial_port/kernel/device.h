@@ -16,25 +16,25 @@ typedef void kdevice_t;
 /*! Kernel device object */
 typedef struct _kdevice_t_
 {
-	device_t   dev;
-		   /* device descriptor(with interface) */
+    device_t   dev;
+    /* device descriptor(with interface) */
 
-	id_t	   id;
-		   /* system level id */
+    id_t	   id;
+    /* system level id */
 
-	int	   flags;
-		   /* is device opened */
+    int	   flags;
+    /* is device opened */
 
-	int	   ref_cnt;
-		   /* number of processes that opened device */
+    int	   ref_cnt;
+    /* number of processes that opened device */
 
-	list_h	   list;
-		   /* all devices are in list */
+    list_h	   list;
+    /* all devices are in list */
 
-	list_t	   descriptors;
-		   /* list of all descriptor referencing this list */
+    list_t	   descriptors;
+    /* list of all descriptor referencing this list */
 }
-kdevice_t;
+        kdevice_t;
 
 #endif /* _K_DEVICE_C_ */
 

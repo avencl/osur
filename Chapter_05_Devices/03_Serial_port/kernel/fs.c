@@ -175,7 +175,6 @@ int k_fs_close_file(descriptor_t *desc)
     return 0;
 }
 
-//op = 0 => write, otherwise =>read
 int k_fs_read_write(descriptor_t *desc, void *buffer, size_t size, int op)
 {
     //desc already checked, use "last_check";
@@ -348,6 +347,73 @@ int k_fs_read_write(descriptor_t *desc, void *buffer, size_t size, int op)
         }
 
         return size - todo;
+    }
+
+}
+
+int k_fs_read_wipe(descriptor_t *desc)
+{
+    //desc already checked, use "last_check";
+    struct kfile_desc *fd = last_check;
+
+    //sanity check
+    //if ((op && (fd->flags & O_WRONLY)) || (!op && (fd->flags & O_RDONLY)))
+    //	return -EPERM;
+
+    if (1) {
+        //read from offset "fd->fp" to "buffer" "size" bytes
+
+        // possible scenarios: (#=block boundary)
+        // fp % block_size == 0
+        // #|fp|-----------#-----------#
+        //     | size |
+
+        // fp % block_size == 0
+        // #|fp|-----------#-----------#
+        //     |      size     |
+
+        // fp % block_size > 0
+        // #----|fp|-------#-----------#
+        //         |size|
+
+        // fp % block_size > 0
+        // #----|fp|-------#-----------#
+        //         |    size    |
+
+        //start with block x where address fd->fp is (x=fp/bsize)
+        //fd->tfd->block[x] has address of block on disk
+        //read that block and copy data from fd->fp to the end of block
+        //DISK_READ(buf, 1, fd->tfd->block[x]);
+        //which part of buf to buffer? ...
+        //read next block ...
+        //stop when all required data is read or end of the file is reached
+
+        //update "ta", fp
+        //return number of bytes read
+
+
+        // size_t todo = size;
+        size_t newBlock = (fd->fp / ft->block_size);
+
+
+        // size_t target_block = (size + fd->fp - 1) / ft->block_size;
+        char newBuffer[ft->block_size];
+        int start = fd->fp % ft->block_size;
+        int end = (6 + fd->fp - 1) % ft->block_size;
+        DISK_READ(newBuffer, 1, fd->tfd->block[newBlock]);
+        while(start <= end) {
+            int i = start;
+            newBuffer[i] = 'x';
+            start = start + 1;
+        }
+
+
+        DISK_WRITE(newBuffer, 1, newBlock);
+
+        // return size - todo;
+        return 1;
+
+
     }
 
 }

@@ -12,17 +12,22 @@ int hello_world()
 
     int fd = open("file:testaa", O_CREAT | O_WRONLY, 0);
     printf("fd=%d\n", fd);
-    int retval = write(fd, "asdfghjklwasdfghjklwasdfghjklwasdfghjklwasdfghjklwasdfghjklwasdfghjklwasdfghjklwasdfghjklwasdfghjklwasdfghjklwasdfghjklwasdfghjklwasdfghjklwasdfghjklwasdfghjklwasdfghjklwasdfghjklwasdfghjklwasdfghjklwasdfghjklwasdfghjklwasdfghjklwasdfghjklwasdfghjklwasdfghjklwasdfghjklwasdfghjklwasdfghjklwasdfghjklwasdfghjklwasdfghjklwasdfghjklwasdfghjklwasdfghjklwasdfghjklwasdfghjklwasdfghjklwasdfghjklwasdfghjklwasdfghjklwasdfghjklwasdfghjklwasdfghjklwasdfghjklwasdfghjklwasdfghjklwasdfghjklwasdfghjklwasdfghjklwasdfghjklwasdfghjklwasdfghjklwasdfghjklwasdfghjklwasdfghjklwasdfghjklwasdfghjklwasdfghjklwasdfghjklwasdfghjklwasdfghjklwasdfghjklwasdfghjklwasdfghjklwasdfghjklwasdfghjklwasdfghjklwasdfghjklwasdfghjklw", 700);
+    int retval = write(fd, "mirko", 6);
     printf("retval=%d\n", retval);
     retval = close(fd);
     printf("retval=%d\n", retval);
 
     fd = open("file:testaa", O_RDONLY, 0);
     printf("fd=%d\n", fd);
-    char buff[700];
-    retval = read(fd, buff, 700);
+    char buff[6];
+    retval = read(fd, buff, 6);
     printf("retval=%d\n", retval);
-    printf("buff=%c\n", *(buff + 200));
+    printf("buff=%s\n", buff);
+    int reta = wipe(fd);
+    retval = read(fd, buff, 6);
+    printf("retval=%d\n", reta);
+    printf("buff=%s\n", buff);
+
 
 
 
